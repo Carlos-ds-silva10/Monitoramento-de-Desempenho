@@ -216,14 +216,15 @@ const maintenances = teamVisits.filter((visit) => {
   team,
   installations,
   maintenances,
-  total: teamVisits.length,
-};
+  total: teamVisits.length,};
   });
 }
   export function getMonthlyProductionStats(
-    teams: Team[],
-    services: Service[],
-    visits: TeamVisit[]) {const months = [
+  teams: Team[],
+  services: Service[],
+  visits: TeamVisit[]
+) {
+  const months = [
     'Jan',
     'Fev',
     'Mar',
@@ -235,18 +236,39 @@ const maintenances = teamVisits.filter((visit) => {
     'Set',
     'Out',
     'Nov',
-    'Dez',];
-    return teams.map((team) => {
-    const result: any = { team: team.name,};
-    months.forEach((month) => { result[month] = 0;});
-    const teamVisits = visits.filter((v) => v.team_id === team.id);
-    teamVisits.forEach((visit) => { 
-      const service = services.find((s) => s.id === visit.service_id);
+    'Dez',
+  ];
+
+  return teams.map((team) => {
+    const result: any = {
+      team: team.name,
+    };
+
+    months.forEach((month) => {
+      result[month] = 0;
+    });
+
+    const teamVisits = visits.filter(
+      (v) => v.team_id === team.id
+    );
+
+    const uniqueServiceIds = [
+      ...new Set(teamVisits.map((v) => v.service_id)),
+    ];
+
+    uniqueServiceIds.forEach((serviceId) => {
+      const service = services.find(
+        (s) => s.id === serviceId
+      );
+
       if (!service) return;
-      const date = new Date(visit.visit_date);
+
+      const date = new Date(service.opened_at);
       const monthIndex = date.getMonth();
+
       result[months[monthIndex]] += 1;
     });
+
     return result;
   });
 }

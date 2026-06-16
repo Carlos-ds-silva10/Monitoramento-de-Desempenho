@@ -70,7 +70,10 @@ export default function MonthlyProduction({
   .sort((a, b) => b.total - a.total);
   /*EQUIPE DESTAQUE DO ANO*/
     const championTeam = ranking[0];
-    const totalServices = ranking.reduce((acc, team) => acc + team.total,0);
+    const totalServices = filteredServices.filter(
+  (service) => service.status === "finalizado").length;
+  const servicesInProgress = filteredServices.filter(
+  (service) => service.status === "em_andamento").length;
     const bestMonthOverall = months.reduce((best, month) => {
     const totalMonth = monthlyData.reduce((acc, team) => {
     const value = team[month.key as keyof typeof team]; return acc + (typeof value === "number" ? value : 0);}, 0);
@@ -103,7 +106,7 @@ export default function MonthlyProduction({
       </div></div>
       <div className="p-6 pb-0">
         {/* CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="glass-card p-5">
         <p className="text-slate-400 text-sm mb-2">
             🏆 Equipe Campeã</p>
@@ -120,7 +123,7 @@ export default function MonthlyProduction({
             </div>
     <div className="glass-card p-5">
       <p className="text-slate-400 text-sm mb-2">
-        📊 Total de Serviços
+        📊 Total de Serviços Finalizados
       </p>
       <h3 className="text-xl font-bold text-emerald-400">
         {totalServices}
@@ -129,6 +132,17 @@ export default function MonthlyProduction({
         Produção anual
       </p>
     </div>
+    <div className="glass-card p-5">
+  <p className="text-slate-400 text-sm mb-2">
+    🚧 Em Andamento
+  </p>
+  <h3 className="text-xl font-bold text-orange-400">
+    {servicesInProgress}
+  </h3>
+  <p className="text-slate-500 text-sm mt-1">
+    Serviços ativos
+  </p>
+</div>
   </div>
 </div>
 {/*Comparativo */}
