@@ -196,26 +196,28 @@ const teamVisits = visits.filter((visit) => {
   return inWeek;
 });
 
-    const serviceIds = [...new Set(teamVisits.map(v => v.service_id))];
-  
-    const weekServices = services.filter(s =>
-      serviceIds.includes(s.id)
-    );
+   const installations = teamVisits.filter((visit) => {
+  const service = services.find(
+    (s) => s.id === visit.service_id
+  );
 
-    const installations = weekServices.filter(
-      s => s.service_type === 'instalacao'
-    ).length;
+  return service?.service_type === "instalacao";
+}).length;
 
-    const maintenances = weekServices.filter(
-      s => s.service_type === 'manutencao'
-    ).length;
+const maintenances = teamVisits.filter((visit) => {
+  const service = services.find(
+    (s) => s.id === visit.service_id
+  );
+
+  return service?.service_type === "manutencao";
+}).length;
 
     return {
-      team,
-      installations,
-      maintenances,
-      total: installations + maintenances,
-    };
+  team,
+  installations,
+  maintenances,
+  total: teamVisits.length,
+};
   });
 }
   export function getMonthlyProductionStats(
