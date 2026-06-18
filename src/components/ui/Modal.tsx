@@ -24,12 +24,12 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className={`relative bg-[#0f1729] border border-[#1e2d4d] rounded-2xl shadow-2xl w-full ${widths[size]} z-10`}
-          >
+  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+  animate={{ opacity: 1, scale: 1, y: 0 }}
+  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+  className={`relative bg-[#0f1729] border border-[#1e2d4d] rounded-2xl shadow-2xl w-full ${widths[size]} z-10 max-h-[90vh] overflow-hidden`}
+>
             <div className="flex items-center justify-between p-5 border-b border-[#1e2d4d]">
               <h2 className="text-base font-semibold text-white">{title}</h2>
               <button
@@ -39,7 +39,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
                 <X size={14} />
               </button>
             </div>
-            <div className="p-5">{children}</div>
+            <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]">
+  {children}
+</div>
           </motion.div>
         </div>
       )}

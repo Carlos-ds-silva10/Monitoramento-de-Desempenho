@@ -1,5 +1,14 @@
 export type ServiceStatus = 'em_andamento' | 'finalizado';
 export type VisitType = 'inicio' | 'continuacao' | 'finalizacao';
+export type SegmentType =
+  | 'cameras'
+  | 'portao'
+  | 'alarme'
+  | 'cerca_eletrica'
+  | 'controle_acesso'
+  | 'rede'
+  | 'interfone'
+  | 'outro';
 
 export interface Team {
   id: string;
@@ -13,6 +22,9 @@ export interface Service {
   service_number: number;
   client_name: string;
   service_type: 'instalacao' | 'manutencao';
+
+  segments: SegmentType[];
+
   status: ServiceStatus;
   opened_at: string;
   closed_at: string | null;
@@ -23,6 +35,9 @@ export interface TeamVisit {
   id: string;
   service_id: string;
   team_id: string;
+
+  segments_worked: SegmentType[];
+
   visit_date: string;
   visit_type: VisitType;
   notes: string;

@@ -20,15 +20,26 @@ export function useServices() {
 
   useEffect(() => { fetchServices(); }, [fetchServices]);
 
- const createService = async ( clientName: string, openedAt: string,serviceType: 'instalacao' | 'manutencao') => {
-    const { error } = await supabase.from('services').insert({
-  client_name: clientName,
-  service_type: serviceType,
-  opened_at: openedAt,
-  status: 'em_andamento',});
-    if (error) throw new Error(error.message);
-    await fetchServices();
-  };
+ const createService = async (
+  clientName: string,
+  openedAt: string,
+  serviceType: 'instalacao' | 'manutencao',
+  segments: string[]
+) => {
+  const { error } = await supabase
+    .from('services')
+    .insert({
+      client_name: clientName,
+      service_type: serviceType,
+      opened_at: openedAt,
+      segments,
+      status: 'em_andamento',
+    });
+
+  if (error) throw new Error(error.message);
+
+  await fetchServices();
+};
 
   const updateService = async (
     id: string,

@@ -18,16 +18,44 @@ import EmptyState from '../components/ui/EmptyState';
 import { buildServiceStats } from '../lib/analytics';
 import type { Service, Team, TeamVisit } from '../types';
 
+const SEGMENTS = [
+  { value: 'cameras', label: 'Câmeras' },
+  { value: 'alarme', label: 'Alarme' },
+  { value: 'portao', label: 'Portão' },
+  { value: 'cerca_eletrica', label: 'Cerca Elétrica' },
+  { value: 'controle_acesso', label: 'Controle de Acesso' },
+  { value: 'rede', label: 'Rede' },
+  { value: 'interfone', label: 'Interfone' },
+  { value: 'outro', label: 'Outro' },
+];
+type SegmentType = (typeof SEGMENTS)[number]['value'];
+
 interface ServicesProps {
   services: Service[];
   teams: Team[];
   visits: TeamVisit[];
   loading: boolean;
-  onCreate: (client: string, openedAt: string) => Promise<void>;
+  onCreate: (
+  client: string,
+  openedAt: string,
+  serviceType: 'instalacao' | 'manutencao',
+  segments: string[]
+) => Promise<void>;
   onUpdate: (id: string, data: any) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onRefresh: () => void;
 }
+
+type ServiceStatus = 'em_andamento' | 'finalizado';
+
+type FormState = {
+  client_name: string;
+  service_type: 'instalacao' | 'manutencao';
+  segments: string[];
+  opened_at: string;
+  status: ServiceStatus;
+  closed_at: string;
+};
 
 export default function Services({
   services,
@@ -40,56 +68,119 @@ export default function Services({
   onRefresh,
 }: ServicesProps) {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'em_andamento' | 'finalizado'>('all');
+  const [statusFilter, setStatusFilter] =
+    useState<'all' | 'em_andamento' | 'finalizado'>('all');
+    const [segmentFilter, setSegmentFilter] = useState<'all' | SegmentType>('all');
+
   const [showModal, setShowModal] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ client_name: '', service_type: 'instalacao' as 'instalacao' | 'manutencao', opened_at: new Date().toISOString().slice(0, 10), status: 'em_andamento' as const, closed_at: ''});
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const filtered = services
-    .filter((s) => {
-      const matchSearch = s.client_name.toLowerCase().includes(search.toLowerCase()) ||
-        String(s.service_number).includes(search);
-      const matchStatus = statusFilter === 'all' || s.status === statusFilter;
-      return matchSearch && matchStatus;
-    });
+  const [form, setForm] = useState<FormState>({
+    client_name: '',
+    service_type: 'instalacao',
+    segments: [],
+    opened_at: new Date().toISOString().slice(0, 10),
+    status: 'em_andamento',
+    closed_at: '',
+  });
 
+  // FUNÇÃO PARA SEGMENTS
+  const toggleSegment = (value: string) => {
+    setForm((prev) => {
+      const exists = prev.segments.includes(value);
+
+      return {
+        ...prev,
+        segments: exists
+          ? prev.segments.filter((s) => s !== value)
+          : [...prev.segments, value],
+      };
+    });
+  };
+const filtered = services.filter((s) => {
+  const matchSearch =
+    s.client_name.toLowerCase().includes(search.toLowerCase()) ||
+    String(s.service_number).includes(search);
+
+  const matchStatus =
+    statusFilter === 'all' || s.status === statusFilter;
+
+  const matchSegment =
+    segmentFilter === 'all'
+      ? true
+      : (s.segments as SegmentType[]).includes(segmentFilter);
+
+  return matchSearch && matchStatus && matchSegment;
+});
   const serviceStats = filtered.map((s) => buildServiceStats(s, visits, teams));
 
-  const openCreate = () => {
-    setEditService(null);
-    setForm({
-  client_name: '',
-  service_type: 'instalacao', opened_at: new Date().toISOString().slice(0, 10), status: 'em_andamento', closed_at: ''});
-    setError('');
-    setShowModal(true);
-  };
+ const openCreate = () => {
+  setEditService(null);
+
+  setForm({
+    client_name: '',
+    service_type: 'instalacao',
+    segments: [],
+    opened_at: new Date().toISOString().slice(0, 10),
+    status: 'em_andamento',
+    closed_at: '',
+  });
+
+  setError('');
+  setShowModal(true);
+};
 
   const openEdit = (s: Service) => {
-    setEditService(s);
-   setForm({ client_name: s.client_name, service_type: s.service_type, opened_at: s.opened_at, status: s.status, closed_at: s.closed_at ?? ''});
-    setError('');
-    setShowModal(true);
-  };
+  setEditService(s);
+
+  setForm({
+    client_name: s.client_name,
+    service_type: s.service_type,
+    segments: s.segments ?? [],
+    opened_at: s.opened_at,
+    status: s.status,
+    closed_at: s.closed_at ?? '',
+  });
+
+  setError('');
+  setShowModal(true);
+};
 
   const handleSubmit = async () => {
-    if (!form.client_name.trim()) { setError('Informe o nome do cliente'); return; }
-    if (!form.opened_at) { setError('Informe a data de abertura'); return; }
-    if (form.status === 'finalizado' && !form.closed_at) { setError('Informe a data de finalização'); return; }
+    if (form.segments.length === 0) {
+  setError('Selecione pelo menos um segmento');return;
+      }
+    if (!form.client_name.trim()) { setError('Informe o nome do cliente'); return;
+     }
+    if (!form.opened_at) { setError('Informe a data de abertura'); return; 
+    }
+    if (form.status === 'finalizado' && !form.closed_at) { setError('Informe a data de finalização'); return;
+    }
     setSaving(true);
     try {
       if (editService) {
-        await onUpdate(editService.id, {
-          client_name: form.client_name,
-          service_type: form.service_type,
-          opened_at: form.opened_at,
-          status: form.status,
-          closed_at: form.status === 'finalizado' ? form.closed_at : null,
-        });
+       await onUpdate(editService.id, {
+  client_name: form.client_name,
+  service_type: form.service_type,
+  segments: form.segments,
+  opened_at: form.opened_at,
+  status: form.status,
+  closed_at:
+    form.status === 'finalizado'
+      ? form.closed_at
+      : null,
+    });
       } else {
-        await onCreate( form.client_name, form.opened_at, form.service_type );
+        await onCreate(
+  form.client_name,
+  form.opened_at,
+  form.service_type,
+  form.segments
+);
       }
       setShowModal(false);
     } catch (e: any) {
@@ -117,23 +208,63 @@ export default function Services({
       />
 
       <div className="flex-1 p-6 space-y-4 overflow-auto">
-        {/* Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {(['all', 'em_andamento', 'finalizado'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setStatusFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                statusFilter === f
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[#0f1729] border border-[#1e2d4d] text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {f === 'all' ? 'Todos' : f === 'em_andamento' ? 'Em Andamento' : 'Finalizados'}
-            </button>
-          ))}
-          <span className="ml-auto text-xs text-slate-500">{filtered.length} resultado(s)</span>
-        </div>
+       {/* Filters */}
+<div className="space-y-3">
+
+  {/* Status */}
+  <div className="flex items-center gap-2 flex-wrap">
+    {(['all', 'em_andamento', 'finalizado'] as const).map((f) => (
+      <button
+        key={f}
+        onClick={() => setStatusFilter(f)}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+          statusFilter === f
+            ? 'bg-blue-600 text-white'
+            : 'bg-[#0f1729] border border-[#1e2d4d] text-slate-400 hover:text-slate-200'
+        }`}
+      >
+        {f === 'all'
+          ? 'Todos'
+          : f === 'em_andamento'
+          ? 'Em Andamento'
+          : 'Finalizados'}
+      </button>
+    ))}
+
+    <span className="ml-auto text-xs text-slate-500">
+      {filtered.length} resultado(s)
+    </span>
+  </div>
+
+  {/* Segmentos */}
+  <div className="flex flex-wrap gap-2">
+    <button
+      onClick={() => setSegmentFilter('all')}
+      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+        segmentFilter === 'all'
+          ? 'bg-indigo-600 text-white'
+          : 'bg-[#0f1729] border border-[#1e2d4d] text-slate-400 hover:text-slate-200'
+      }`}
+    >
+      Todos Segmentos
+    </button>
+
+    {SEGMENTS.map((seg) => (
+      <button
+        key={seg.value}
+        onClick={() => setSegmentFilter(seg.value as SegmentType)}
+        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+          segmentFilter === seg.value
+            ? 'bg-indigo-600 text-white'
+            : 'bg-[#0f1729] border border-[#1e2d4d] text-slate-400 hover:text-slate-200'
+        }`}
+      >
+        {seg.label}
+      </button>
+    ))}
+  </div>
+
+</div>
 
         {loading ? (
           <div className="flex justify-center py-16"><LoadingSpinner /></div>
@@ -165,27 +296,52 @@ export default function Services({
                       <span className="text-xs font-bold text-blue-400">#{stat.service_number}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-white truncate">{stat.client_name}</p>
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${ stat.service_type === 'manutencao'
-                             ? 'bg-yellow-500/10 text-yellow-400' : 'bg-blue-500/10 text-blue-400'
-                            }`}>
-                                 {stat.service_type === 'manutencao'
-                                 ? 'Manutenção'
-                                 : 'Instalação'}
-                                 </span>
-                                 </div>
-                                 <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-xs text-slate-500 flex items-center gap-1">
-                          <Calendar size={11} /> {formatDate(stat.opened_at)}
-                        </span>
-                        {stat.technical_days > 0 && (
-                          <span className="text-xs text-slate-500">
-                            {stat.technical_days} dia(s) técnico(s)
-                          </span>
-                        )}
-                      </div>
-                    </div>
+  <div className="flex items-center gap-2">
+    <p className="text-sm font-semibold text-white truncate">
+      {stat.client_name}
+    </p>
+
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-medium ${
+        stat.service_type === 'manutencao'
+          ? 'bg-yellow-500/10 text-yellow-400'
+          : 'bg-blue-500/10 text-blue-400'
+      }`}
+    >
+      {stat.service_type === 'manutencao' ? 'Manutenção' : 'Instalação'}
+    </span>
+  </div>
+
+  {/* 👇SEGMENTOS */}
+  {stat.segments?.length > 0 && (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {stat.segments.map((seg) => {
+        const label = SEGMENTS.find((s) => s.value === seg)?.label;
+
+        return (
+          <span
+            key={seg}
+            className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"
+          >
+            {label}
+          </span>
+        );
+      })}
+    </div>
+  )}
+
+  <div className="flex items-center gap-3 mt-0.5">
+    <span className="text-xs text-slate-500 flex items-center gap-1">
+      <Calendar size={11} /> {formatDate(stat.opened_at)}
+    </span>
+
+    {stat.technical_days > 0 && (
+      <span className="text-xs text-slate-500">
+        {stat.technical_days} dia(s) técnico(s)
+      </span>
+    )}
+  </div>
+</div>
 
                     {/* Teams */}
                     <div className="hidden md:flex items-center gap-1">
@@ -301,7 +457,7 @@ export default function Services({
               onChange={(e) => setForm({ ...form, opened_at: e.target.value })}
             />
           </div>
-          <div>
+ <div>
   <label className="text-xs text-slate-400 font-medium block mb-1.5">
     Tipo de Serviço
   </label>
@@ -319,7 +475,47 @@ export default function Services({
     <option value="instalacao">Instalação</option>
     <option value="manutencao">Manutenção</option>
   </select>
-            </div>
+</div>
+
+{/* 👇 SEGMENTOS */}
+<div>
+  <label className="text-xs text-slate-400 font-medium block mb-1.5">
+    Segmentos
+  </label>
+
+  <div className="grid grid-cols-2 gap-2">
+    {SEGMENTS.map((seg) => (
+      <label
+        key={seg.value}
+        className="flex items-center gap-2 p-2 rounded-lg border border-[#1e2d4d] bg-[#0f1729] cursor-pointer hover:border-blue-500/30"
+      >
+        <input
+          type="checkbox"
+          checked={form.segments.includes(seg.value)}
+          onChange={() => toggleSegment(seg.value)}
+        />
+        <span className="text-xs text-slate-300">{seg.label}</span>
+      </label>
+    ))}
+  </div>
+
+  {form.segments.length > 0 && (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {form.segments.map((seg) => {
+        const label = SEGMENTS.find((s) => s.value === seg)?.label;
+
+        return (
+          <span
+            key={seg}
+            className="text-xs px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20"
+          >
+            {label}
+          </span>
+        );
+      })}
+    </div>
+  )}
+</div>
           {editService && (
             <>
               <div>
