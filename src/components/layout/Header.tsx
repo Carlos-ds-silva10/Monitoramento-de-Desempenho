@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Search, Bell, RefreshCw } from 'lucide-react';
+import { Search, Bell, RefreshCw, Calendar } from 'lucide-react';
+import { usePeriod, MonthValue } from '../../context/PeriodContext';
 
 interface HeaderProps {
   title: string;
@@ -9,6 +10,7 @@ interface HeaderProps {
   onRefresh?: () => void;
   loading?: boolean;
   actions?: React.ReactNode;
+  hidePeriodFilter?: boolean;
 }
 
 export default function Header({
@@ -19,7 +21,26 @@ export default function Header({
   onRefresh,
   loading,
   actions,
+  hidePeriodFilter,
 }: HeaderProps) {
+  const { selectedYear, selectedMonth, setYear, setMonth, availableYears } = usePeriod();
+
+  const months = [
+    { value: 'Todos', label: 'Todos os Meses' },
+    { value: '0', label: 'Janeiro' },
+    { value: '1', label: 'Fevereiro' },
+    { value: '2', label: 'Março' },
+    { value: '3', label: 'Abril' },
+    { value: '4', label: 'Maio' },
+    { value: '5', label: 'Junho' },
+    { value: '6', label: 'Julho' },
+    { value: '7', label: 'Agosto' },
+    { value: '8', label: 'Setembro' },
+    { value: '9', label: 'Outubro' },
+    { value: '10', label: 'Novembro' },
+    { value: '11', label: 'Dezembro' },
+  ];
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -20 }}
@@ -45,6 +66,34 @@ export default function Header({
       )}
 
       <div className="flex items-center gap-2">
+        {!hidePeriodFilter && (
+          <div className="flex items-center gap-2 mr-4 bg-[#0f1729] border border-[#1e2d4d] rounded-lg px-2 py-1">
+            <Calendar size={14} className="text-slate-400" />
+            <select
+              value={selectedMonth}
+              onChange={(e) => setMonth(e.target.value as MonthValue)}
+              className="bg-transparent text-xs text-slate-300 focus:outline-none cursor-pointer"
+            >
+              {months.map((m) => (
+                <option key={m.value} value={m.value} className="bg-[#0f1729]">
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-slate-600 text-xs">/</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setYear(e.target.value)}
+              className="bg-transparent text-xs text-slate-300 focus:outline-none cursor-pointer"
+            >
+              {availableYears.map((y) => (
+                <option key={y} value={y} className="bg-[#0f1729]">
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         {actions}
         {onRefresh && (
           <button

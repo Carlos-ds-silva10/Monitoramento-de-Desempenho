@@ -1,20 +1,24 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { usePeriod } from './context/PeriodContext';
 import Sidebar from './components/layout/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Services from './pages/Services.tsx';
 import Visits from './pages/Visitis.tsx';
 import Teams from './pages/Teams';
 import Reports from './pages/Reports';
+import Reincidences from './pages/Reincidences';
+import Quality from './pages/Quality';
 import { useTeams } from './hooks/useTeams';
 import { useServices } from './hooks/useServices';
 import { useVisits } from './hooks/useVisits';
 import MonthlyProduction from './pages/MonthlyProduction';
 import { useEffect } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import Login from './pages/Login';
 
-type Page = 'dashboard' | 'services' | 'visits' | 'teams' | 'reports' | 'monthly-production';
+type Page = 'dashboard' | 'services' | 'visits' | 'teams' | 'reports' | 'monthly-production' | 'reincidences' | 'quality';
 
 const pageTransition = {
   initial: { opacity: 0, x: 10 },
@@ -25,7 +29,7 @@ const pageTransition = {
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard');
   const [collapsed, setCollapsed] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   useEffect(() => {
   async function getSession() {
@@ -81,6 +85,26 @@ export default function App() {
     fetchVisits();
   }, [fetchTeams, fetchServices, fetchVisits]);
 
+  const { selectedYear, selectedMonth } = usePeriod();
+
+  const filteredServices = useMemo(() => {
+    return services.filter((s) => {
+      const d = new Date(s.opened_at);
+      const matchesYear = d.getFullYear().toString() === selectedYear;
+      const matchesMonth = selectedMonth === 'Todos' || d.getMonth().toString() === selectedMonth;
+      return matchesYear && matchesMonth;
+    });
+  }, [services, selectedYear, selectedMonth]);
+
+  const filteredVisits = useMemo(() => {
+    return visits.filter((v) => {
+      const d = new Date(v.visit_date);
+      const matchesYear = d.getFullYear().toString() === selectedYear;
+      const matchesMonth = selectedMonth === 'Todos' || d.getMonth().toString() === selectedMonth;
+      return matchesYear && matchesMonth;
+    });
+  }, [visits, selectedYear, selectedMonth]);
+
   const globalLoading = teamsLoading || servicesLoading || visitsLoading;
 
   if (authLoading) {
@@ -121,17 +145,17 @@ if (!session) {
             {page === 'dashboard' && (
               <Dashboard
                 teams={teams}
-                services={services}
-                visits={visits}
+                services={filteredServices}
+                visits={filteredVisits}
                 loading={globalLoading}
                 onRefresh={refreshAll}
               />
             )}
             {page === 'services' && (
               <Services
-                services={services}
+                services={filteredServices}
                 teams={teams}
-                visits={visits}
+                visits={filteredVisits}
                 loading={servicesLoading}
                 onCreate={createService}
                 onUpdate={updateService}
@@ -141,14 +165,26 @@ if (!session) {
             )}
             {page === 'visits' && (
               <Visits
-                visits={visits}
+                visits={filteredVisits}
                 teams={teams}
-                services={services}
+                services={filteredServices}
                 loading={visitsLoading}
                 onCreate={createVisit}
                 onUpdate={updateVisit}
                 onDelete={deleteVisit}
                 onRefresh={fetchVisits}
+              />
+            )}
+            {page === 'reincidences' && (
+              <Reincidences services={filteredServices} onRefresh={fetchServices} />
+            )}
+            {page === 'quality' && (
+              <Quality
+                teams={teams}
+                services={filteredServices}
+                visits={filteredVisits}
+                loading={globalLoading}
+                onRefresh={refreshAll}
               />
             )}
             {page === 'teams' && (
@@ -166,19 +202,19 @@ if (!session) {
             {page === 'reports' && (
               <Reports
                 teams={teams}
-                services={services}
-                visits={visits}
+                services={filteredServices}
+                visits={filteredVisits}
                 loading={globalLoading}
                 onRefresh={refreshAll}
               />
             )}
             {page === 'monthly-production' && (
               <MonthlyProduction
-              teams={teams}
-              services={services}
-              visits={visits}
-              loading={globalLoading}
-              onRefresh={refreshAll}
+                teams={teams}
+                services={filteredServices}
+                visits={filteredVisits}
+                loading={globalLoading}
+                onRefresh={refreshAll}
               />
             )}
           </motion.div>

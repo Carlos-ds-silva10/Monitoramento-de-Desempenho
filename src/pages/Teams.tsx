@@ -75,8 +75,8 @@ export default function Teams({ teams, services, visits, loading, onCreate, onUp
         await onCreate(form.name, form.color);
       }
       setShowModal(false);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erro ao salvar equipe');
     } finally {
       setSaving(false);
     }

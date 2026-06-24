@@ -21,7 +21,7 @@ import {
 import { Download, BarChart3, TrendingUp, Award } from 'lucide-react';
 import Header from '../components/layout/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { buildTeamStats, buildServiceStats, getMonthlyEvolution } from '../lib/analytics';
+import { buildTeamStats, buildServiceStats } from '../lib/analytics';
 import type { Team, Service, TeamVisit } from '../types';
 
 interface ReportsProps {
@@ -32,11 +32,13 @@ interface ReportsProps {
   onRefresh: () => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#0f1729] border border-[#1e2d4d] rounded-xl p-3 shadow-xl text-xs">
       <p className="text-slate-300 font-medium mb-1">{label}</p>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.color ?? '#94a3b8' }} className="font-medium">
           {p.name}: {typeof p.value === 'number' ? p.value.toFixed(1) : p.value}
@@ -48,7 +50,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function Reports({ teams, services, visits, loading, onRefresh }: ReportsProps) {
   const stats = useMemo(() => buildTeamStats(teams, services, visits), [teams, services, visits]);
-  const monthly = useMemo(() => getMonthlyEvolution(services, visits), [services, visits]);
 
   const servicesWithStats = useMemo(
     () => services.filter((s) => s.status === 'finalizado').map((s) => buildServiceStats(s, visits, teams)),

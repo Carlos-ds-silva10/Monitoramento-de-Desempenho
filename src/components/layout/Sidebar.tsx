@@ -6,13 +6,15 @@ import {
   BarChart3,
   Activity,
   ChevronRight, LogOut,
+  Repeat2,
+  ShieldCheck,
 } from 'lucide-react';
 import { Trophy } from 'lucide-react';
 import logo from '../../assets/logotopo.png';
 import { supabase } from '../../lib/supabase';
 import { Menu } from 'lucide-react';
 
-type Page = 'dashboard' | 'services' | 'visits' | 'teams' | 'reports' | 'monthly-production';;
+type Page = 'dashboard' | 'services' | 'visits' | 'teams' | 'reports' | 'monthly-production' | 'reincidences' | 'quality';;
 
 interface SidebarProps {
    currentPage: Page; onNavigate: (page: Page) => void; collapsed: boolean; onToggle: () => void;
@@ -21,6 +23,8 @@ interface SidebarProps {
 const navItems = [
   { id: 'dashboard' as Page, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'services' as Page, label: 'Serviços', icon: Briefcase },
+  { id: 'reincidences' as Page, label: 'Reincidencias', icon: Repeat2 },
+  { id: 'quality' as Page,      label: 'Qualidade',     icon: ShieldCheck },
   { id: 'visits' as Page, label: 'Visitas', icon: Activity },
   { id: 'teams' as Page, label: 'Equipes', icon: Users },
   { id: 'reports' as Page, label: 'Relatórios', icon: BarChart3 },

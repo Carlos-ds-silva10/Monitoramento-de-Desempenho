@@ -1,19 +1,44 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Activity, Calendar, Trash2, Edit2, Filter } from 'lucide-react';
+import { Plus, Activity, Trash2, Edit2, Filter } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import EmptyState from '../components/ui/EmptyState';
 import type { Team, Service, TeamVisit, VisitType } from '../types';
 
+const SEGMENTS = [
+  { value: 'cameras', label: 'Câmeras' },
+  { value: 'alarme', label: 'Alarme' },
+  { value: 'portao', label: 'Portão' },
+  { value: 'cerca_eletrica', label: 'Cerca Elétrica' },
+  { value: 'controle_acesso', label: 'Controle de Acesso' },
+  { value: 'rede', label: 'Rede' },
+  { value: 'interfone', label: 'Interfone' },
+  { value: 'outro', label: 'Outro' },
+];
 interface VisitsProps {
   visits: TeamVisit[];
   teams: Team[];
   services: Service[];
   loading: boolean;
-  onCreate: (serviceId: string, teamId: string, date: string, type: VisitType, notes: string) => Promise<void>;
-  onUpdate: (id: string, data: any) => Promise<void>;
+  onCreate: (
+    serviceId: string,
+    teamId: string,
+    date: string,
+    type: VisitType,
+    notes: string,
+    segments: string[]
+  ) => Promise<void>;
+  onUpdate: (
+    id: string,
+    data: {
+      visit_date?: string;
+      visit_type?: VisitType;
+      notes?: string;
+      segments_worked?: string[];
+    }
+  ) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onRefresh: () => void;
 }
@@ -41,6 +66,7 @@ function formatDate(d: string) {
   const [y, m, day] = d.split('-');
   return `${day}/${m}/${y}`;
 }
+void formatDate;
 
 export default function Visits({ visits, teams, services, loading, onCreate, onUpdate, onDelete, onRefresh }: VisitsProps) {
   const [search, setSearch] = useState('');
@@ -54,7 +80,18 @@ export default function Visits({ visits, teams, services, loading, onCreate, onU
     visit_date: new Date().toISOString().slice(0, 10),
     visit_type: 'continuacao' as VisitType,
     notes: '',
+    segments: [] as string[],
   });
+
+  const toggleSegment = (segment: string) => {
+  setForm((prev) => ({
+    ...prev,
+    segments: prev.segments.includes(segment)
+      ? prev.segments.filter((s) => s !== segment)
+      : [...prev.segments, segment],
+  }));
+};
+
   const [serviceSearch, setServiceSearch] = useState('');
   const filteredServices = services.filter((service) =>
   `${service.service_number} ${service.client_name}`
@@ -77,14 +114,26 @@ export default function Visits({ visits, teams, services, loading, onCreate, onU
 
   const openCreate = () => {
     setEditVisit(null);
-    setForm({ service_id: '', team_id: '', visit_date: new Date().toISOString().slice(0, 10), visit_type: 'continuacao', notes: '' });
+    setForm({
+  service_id: '',
+  team_id: '',
+  visit_date: new Date().toISOString().slice(0, 10),
+  visit_type: 'continuacao',
+  notes: '',
+  segments: [], });
     setError('');
     setShowModal(true);
   };
 
   const openEdit = (v: TeamVisit) => {
     setEditVisit(v);
-    setForm({ service_id: v.service_id, team_id: v.team_id, visit_date: v.visit_date, visit_type: v.visit_type, notes: v.notes });
+    setForm({
+  service_id: v.service_id,
+  team_id: v.team_id,
+  visit_date: v.visit_date,
+  visit_type: v.visit_type,
+  notes: v.notes,
+  segments: v.segments_worked ?? [],});
     setError('');
     setShowModal(true);
   };
@@ -96,13 +145,20 @@ export default function Visits({ visits, teams, services, loading, onCreate, onU
     setSaving(true);
     try {
       if (editVisit) {
-        await onUpdate(editVisit.id, { visit_date: form.visit_date, visit_type: form.visit_type, notes: form.notes });
+        await onUpdate(editVisit.id, { visit_date: form.visit_date, visit_type: form.visit_type, notes: form.notes, segments_worked: form.segments });
       } else {
-        await onCreate(form.service_id, form.team_id, form.visit_date, form.visit_type, form.notes);
+        await onCreate(
+  form.service_id,
+  form.team_id,
+  form.visit_date,
+  form.visit_type,
+  form.notes,
+  form.segments
+);
       }
       setShowModal(false);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erro ao salvar visita');
     } finally {
       setSaving(false);
     }
@@ -192,12 +248,32 @@ export default function Visits({ visits, teams, services, loading, onCreate, onU
                       style={{ backgroundColor: team?.color ?? '#3b82f6' }}
                     />
 
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{team?.name ?? '—'}</p>
-                      <p className="text-xs text-slate-500 truncate">
-                        #{service?.service_number} — {service?.client_name ?? '—'}
-                      </p>
-                    </div>
+                   <div className="flex-1 min-w-0">
+  <p className="text-sm font-semibold text-white truncate">
+    {team?.name ?? '—'}
+  </p>
+
+  <p className="text-xs text-slate-500 truncate">
+    #{service?.service_number} — {service?.client_name ?? '—'}
+  </p>
+
+  {visit.segments_worked?.length > 0 && (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {visit.segments_worked.map((segment) => {
+        const seg = SEGMENTS.find((s) => s.value === segment);
+
+        return (
+          <span
+            key={segment}
+            className="px-2 py-0.5 text-[10px] rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300"
+          >
+            {seg?.label ?? segment}
+          </span>
+        );
+      })}
+    </div>
+  )}
+</div>
 
                     {visit.notes && (
                       <p className="text-xs text-slate-500 hidden md:block max-w-xs truncate italic">
@@ -265,6 +341,30 @@ export default function Visits({ visits, teams, services, loading, onCreate, onU
     ))}
         </select>
         </div>
+        <div>
+  <label className="text-xs text-slate-400 font-medium block mb-1.5">
+    Segmentos Trabalhados
+  </label>
+
+  <div className="grid grid-cols-2 gap-2">
+    {SEGMENTS.map((seg) => (
+      <label
+        key={seg.value}
+        className="flex items-center gap-2 p-2 rounded-lg border border-[#1e2d4d] bg-[#0f1729] cursor-pointer hover:border-blue-500/30"
+      >
+        <input
+          type="checkbox"
+          checked={form.segments.includes(seg.value)}
+          onChange={() => toggleSegment(seg.value)}
+        />
+
+        <span className="text-xs text-slate-300">
+          {seg.label}
+        </span>
+      </label>
+    ))}
+  </div>
+</div>
           <div>
             <label className="text-xs text-slate-400 font-medium block mb-1.5">Data da Visita *</label>
             <input

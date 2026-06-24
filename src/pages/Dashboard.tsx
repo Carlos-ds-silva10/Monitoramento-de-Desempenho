@@ -10,10 +10,6 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
 } from 'recharts';
 import {
   Trophy,
@@ -25,6 +21,7 @@ import {
   Users,
   Activity,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import Header from '../components/layout/Header';
 import AnimatedNumber from '../components/ui/AnimatedNumber';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -44,11 +41,6 @@ const container = {
   show: { opacity: 1, transition: { staggerChildren: 0.07 } },
 };
 
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
-
 function categoryColor(cat: 'fast' | 'average' | 'slow') {
   if (cat === 'fast') return { text: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/20', bar: '#10b981' };
   if (cat === 'average') return { text: 'text-orange-400', bg: 'bg-orange-500/15', border: 'border-orange-500/20', bar: '#f97316' };
@@ -61,11 +53,13 @@ function categoryLabel(cat: 'fast' | 'average' | 'slow') {
   return 'Lenta';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#0f1729] border border-[#1e2d4d] rounded-xl p-3 shadow-xl text-xs">
       <p className="text-slate-300 font-medium mb-1">{label}</p>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.color }} className="font-medium">
           {p.name}: {p.value}
@@ -103,13 +97,6 @@ const topMaintenanceTeam = productionStats .slice() .sort((a, b) => b.maintenanc
       'Dias Médios': parseFloat(s.avg_days_per_service.toFixed(1)),
       Serviços: s.completed_services,
       fill: categoryColor(s.category).bar,
-    }));
-
-  const radarData = stats
-    .filter((s) => s.completed_services > 0)
-    .map((s) => ({
-      name: s.team.name.length > 8 ? s.team.name.slice(0, 8) + '…' : s.team.name,
-      score: s.performance_score,
     }));
 
   return (
@@ -446,7 +433,7 @@ function KpiCard({
   accent,
   delay,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string;
   sub: string;
@@ -487,7 +474,7 @@ function StatCard({
   value,
   color,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: number;
   color: 'emerald' | 'blue' | 'slate';

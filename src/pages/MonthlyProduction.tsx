@@ -41,14 +41,17 @@ export default function MonthlyProduction({
     
   /*Grafico que compara as equipes*/
   const chartData = months.map((month) => {
-  const row: any = {
-    month: month.label,
-  };
-  monthlyData.forEach((team) => {
-    row[team.team] =
-      team[month.key as keyof typeof team];
+    const row: Record<string, string | number> = {
+      month: month.label,
+    };
+    monthlyData.forEach((team) => {
+      const value = team[month.key as keyof typeof team];
+      if (typeof value === 'number') {
+        row[team.team] = value;
+      }
+    });
+    return row;
   });
-  return row;});
   /*Ranck mensal*/
   const ranking = [...monthlyData]
   .map((team) => ({

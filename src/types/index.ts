@@ -1,4 +1,5 @@
 export type ServiceStatus = 'em_andamento' | 'finalizado';
+export type ReincidenceStatus = 'em_andamento' | 'finalizado';
 export type VisitType = 'inicio' | 'continuacao' | 'finalizacao';
 export type SegmentType =
   | 'cameras'
@@ -44,6 +45,30 @@ export interface TeamVisit {
   created_at: string;
   team?: Team;
   service?: Service;
+}
+
+export interface ServiceReincidence {
+  id: string;
+  service_id: string;
+
+  title: string;
+  description: string;
+
+  affected_segments: SegmentType[];
+
+  status: ReincidenceStatus;
+
+  opened_at: string;
+  closed_at: string | null;
+
+  created_at: string;
+
+  assigned_team_id?: string | null;
+  origin_visit_id?: string | null;
+
+  service?: Service;
+
+  assigned_team?: Team | null;
 }
 
 export interface TeamStats {

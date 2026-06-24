@@ -27,23 +27,31 @@ export function useVisits(serviceId?: string) {
     teamId: string,
     visitDate: string,
     visitType: VisitType,
-    notes: string
+    notes: string,
+    segments: string[]
   ) => {
+
     const { error } = await supabase.from('team_visits').insert({
       service_id: visitServiceId,
       team_id: teamId,
       visit_date: visitDate,
       visit_type: visitType,
       notes,
+      segments_worked: segments,
     });
     if (error) throw new Error(error.message);
     await fetchVisits();
   };
 
   const updateVisit = async (
-    id: string,
-    data: { visit_date?: string; visit_type?: VisitType; notes?: string }
-  ) => {
+  id: string,
+  data: {
+    visit_date?: string;
+    visit_type?: VisitType;
+    notes?: string;
+    segments_worked?: string[];
+  }
+) => {
     const { error } = await supabase.from('team_visits').update(data).eq('id', id);
     if (error) throw new Error(error.message);
     await fetchVisits();

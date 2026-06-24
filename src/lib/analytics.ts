@@ -219,11 +219,17 @@ const maintenances = teamVisits.filter((visit) => {
   total: teamVisits.length,};
   });
 }
-  export function getMonthlyProductionStats(
+  export interface MonthlyTeamStats {
+  team: string;
+  Jan: number; Fev: number; Mar: number; Abr: number; Mai: number; Jun: number;
+  Jul: number; Ago: number; Set: number; Out: number; Nov: number; Dez: number;
+}
+
+export function getMonthlyProductionStats(
   teams: Team[],
   services: Service[],
   visits: TeamVisit[]
-) {
+): MonthlyTeamStats[] {
   const months = [
     'Jan',
     'Fev',
@@ -240,35 +246,45 @@ const maintenances = teamVisits.filter((visit) => {
   ];
 
   return teams.map((team) => {
-    const result: any = {
+    const result: MonthlyTeamStats = {
       team: team.name,
+      Jan: 0, Fev: 0, Mar: 0, Abr: 0, Mai: 0, Jun: 0,
+      Jul: 0, Ago: 0, Set: 0, Out: 0, Nov: 0, Dez: 0
     };
-
-    months.forEach((month) => {
-      result[month] = 0;
-    });
 
     const teamVisits = visits.filter(
       (v) => v.team_id === team.id
     );
 
-    const uniqueServiceIds = [
-      ...new Set(teamVisits.map((v) => v.service_id)),
-    ];
+   const uniqueServiceIds = [
+  ...new Set(teamVisits.map((v) => v.service_id)),
+];
 
-    uniqueServiceIds.forEach((serviceId) => {
-      const service = services.find(
-        (s) => s.id === serviceId
-      );
+uniqueServiceIds.forEach((serviceId) => {
+  const service = services.find(
+    (s) => s.id === serviceId
+  );
 
-      if (!service) return;
+  if (!service) return;
 
-      const date = new Date(service.opened_at);
-      const monthIndex = date.getMonth();
+  if (service.status !== 'finalizado') return;
 
-      result[months[monthIndex]] += 1;
-    });
+  if (!service.closed_at) return;
 
-    return result;
+  const date = new Date(service.closed_at);
+
+  const monthIndex = date.getMonth();
+
+  const monthName =
+    months[monthIndex] as keyof Omit<
+      MonthlyTeamStats,
+      'team'
+    >;
+
+  result[monthName] =
+    result[monthName] + 1;
+});
+
+return result;
   });
 }
